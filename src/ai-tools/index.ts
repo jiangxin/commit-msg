@@ -68,6 +68,7 @@ function compareByPriority(a: AIToolConfig, b: AIToolConfig): number {
 }
 
 // Import all tool configurations
+import antigravityConfig from './antigravity.js';
 import claudeConfig from './claude.js';
 import codexConfig from './codex.js';
 import cursorConfig from './cursor.js';
@@ -84,6 +85,7 @@ import qwenCodeConfig from './qwen-code.js';
  * Sorted by priority: CLI → PLUGIN → IDE → OTHERS
  */
 const allConfigs: AIToolConfig[] = [
+  antigravityConfig,
   claudeConfig,
   codexConfig,
   iflowConfig,

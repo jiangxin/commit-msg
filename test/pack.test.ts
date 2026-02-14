@@ -393,6 +393,8 @@ describe('commit-msg CLI npm pack tests', () => {
       const env = {
         ...process.env,
         CURSOR_TRACE_ID: 'test-trace-id',
+        ANTIGRAVITY_AGENT: '', // Ensure Antigravity is not detected
+        __CFBundleIdentifier: '', // Ensure Antigravity is not detected
       };
 
       const execResult = spawnSync(
@@ -546,7 +548,7 @@ describe('commit-msg CLI npm pack tests', () => {
       const configs = installedAITools.getAllToolConfigs();
       expect(configs).toBeDefined();
       expect(Array.isArray(configs)).toBe(true);
-      expect(configs.length).toBe(10); // Should have 10 tools
+      expect(configs.length).toBe(11); // Should have 11 tools
 
       // Verify all configs have required fields
       for (const config of configs) {

@@ -52,8 +52,8 @@ describe('Production Build Tests', () => {
   describe('Configuration Structure Tests', () => {
     it('should have correct number of tool configurations', () => {
       const configs = productionAITools.getAllToolConfigs();
-      // Should have 10 tools: claude, codex, iflow, opencode, qwen-code, gemini, qoder-cli, cursor, kiro, qoder-ide
-      expect(configs.length).toBe(10);
+      // Should have 11 tools: claude, codex, iflow, opencode, qwen-code, gemini, qoder-cli, cursor, kiro, qoder-ide, antigravity
+      expect(configs.length).toBe(11);
     });
 
     it('should have all required fields in each configuration', () => {
@@ -133,6 +133,7 @@ describe('Production Build Tests', () => {
         'Cursor',
         'Kiro',
         'Qoder',
+        'Antigravity',
       ];
 
       expect(toolNames.length).toBe(expectedTools.length);
