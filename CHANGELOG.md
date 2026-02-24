@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.13] - 2026-02-24
+
+### Added
+
+- Add Antigravity IDE support
+  - Add `__CFBundleIdentifier` (com.google.antigravity) and `ANTIGRAVITY_AGENT` environment variable detection
+  - Enable tracking contributions from Antigravity IDE
+  - Add comprehensive test coverage for Antigravity environment variables
+
+### Changed
+
+- Match duplicate trailers by username instead of full user info when adding Co-developed-by
+  - Previously compared full "Name <email>" string, causing Cursor <noreply@cursor.com> and Cursor <cursoragent@cursor.com> to be treated as different users
+  - Now compare only the username part and ignore the email for deduplication
+  - Both usernames must be non-empty; correctly deduplicate same-identity different-email trailers
+  - Add extractUsernameFromTrailer function and test cases for Cursor scenario
+
 ## [0.2.11] - 2026-02-13
 
 ### Added
