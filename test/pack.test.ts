@@ -4,6 +4,55 @@ import { existsSync, rmSync, mkdirSync, writeFileSync, readFileSync } from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 
+// List of all AI tool environment variable keys to clear before testing
+// This ensures clean test state by preventing interference between different AI tools
+const AI_TOOL_ENV_VARS = [
+  'CLAUDECODE',
+  'CODEX_MANAGED_BY_NPM',
+  'CODEX_MANAGED_BY_BUN',
+  'IFLOW_CLI',
+  'OPENCODE',
+  'QWEN_CODE',
+  'GEMINI_CLI',
+  'QODER_CLI',
+  'CURSOR_TRACE_ID',
+  'VSCODE_GIT_ASKPASS_MAIN',
+  'BROWSER',
+  '__CFBundleIdentifier',
+  'ANTIGRAVITY_AGENT',
+  'VSCODE_BRAND',
+];
+
+/**
+ * Create a clean environment for testing by removing all AI tool environment variables
+ * @param baseEnv The base environment to start with (defaults to process.env)
+ * @returns A new environment object with AI tool env vars removed
+ */
+function createCleanEnv(
+  baseEnv: NodeJS.ProcessEnv = process.env
+): Record<string, string> {
+  const cleanEnv: Record<string, string> = {};
+  for (const [key, value] of Object.entries(baseEnv)) {
+    if (!AI_TOOL_ENV_VARS.includes(key) && value !== undefined) {
+      cleanEnv[key] = value;
+    }
+  }
+  return cleanEnv;
+}
+
+/**
+ * Create environment for testing with specific AI tool variables set
+ * @param toolEnvVars Object containing AI tool environment variables to set
+ * @returns A new environment object with AI tool env vars cleared and specified ones set
+ */
+function createToolEnv(
+  toolEnvVars: Record<string, string>
+): Record<string, string> {
+  const env = createCleanEnv();
+  Object.assign(env, toolEnvVars);
+  return env;
+}
+
 // Check Node.js version to determine which dev script to use
 // Node.js 21+: Use tsx (dev)
 // Node.js 19-20: Use tsx (dev:node20)
@@ -221,10 +270,7 @@ describe('commit-msg CLI npm pack tests', () => {
       writeFileSync(messageFile, commitMessage, 'utf8');
 
       // Set environment variable for Co-developed-by
-      const env = {
-        ...process.env,
-        CLAUDECODE: '1',
-      };
+      const env = createToolEnv({ CLAUDECODE: '1' });
 
       // Run exec command from installed package
       const execResult = spawnSync(
@@ -306,10 +352,7 @@ describe('commit-msg CLI npm pack tests', () => {
       const commitMessage = 'feat: test co-developed-by';
       writeFileSync(messageFile, commitMessage, 'utf8');
 
-      const env = {
-        ...process.env,
-        CLAUDECODE: '1',
-      };
+      const env = createToolEnv({ CLAUDECODE: '1' });
 
       const execResult = spawnSync(
         'node',
@@ -334,10 +377,7 @@ describe('commit-msg CLI npm pack tests', () => {
       const commitMessage = 'feat: test qwen co-developed-by';
       writeFileSync(messageFile, commitMessage, 'utf8');
 
-      const env = {
-        ...process.env,
-        QWEN_CODE: '1',
-      };
+      const env = createToolEnv({ QWEN_CODE: '1' });
 
       const execResult = spawnSync(
         'node',
@@ -362,10 +402,7 @@ describe('commit-msg CLI npm pack tests', () => {
       const commitMessage = 'feat: test gemini co-developed-by';
       writeFileSync(messageFile, commitMessage, 'utf8');
 
-      const env = {
-        ...process.env,
-        GEMINI_CLI: '1',
-      };
+      const env = createToolEnv({ GEMINI_CLI: '1' });
 
       const execResult = spawnSync(
         'node',
@@ -390,12 +427,7 @@ describe('commit-msg CLI npm pack tests', () => {
       const commitMessage = 'feat: test cursor co-developed-by';
       writeFileSync(messageFile, commitMessage, 'utf8');
 
-      const env = {
-        ...process.env,
-        CURSOR_TRACE_ID: 'test-trace-id',
-        ANTIGRAVITY_AGENT: '', // Ensure Antigravity is not detected
-        __CFBundleIdentifier: '', // Ensure Antigravity is not detected
-      };
+      const env = createToolEnv({ CURSOR_TRACE_ID: 'test-trace-id' });
 
       const execResult = spawnSync(
         'node',
@@ -420,10 +452,7 @@ describe('commit-msg CLI npm pack tests', () => {
       const commitMessage = 'feat: test codex npm co-developed-by';
       writeFileSync(messageFile, commitMessage, 'utf8');
 
-      const env = {
-        ...process.env,
-        CODEX_MANAGED_BY_NPM: '1',
-      };
+      const env = createToolEnv({ CODEX_MANAGED_BY_NPM: '1' });
 
       const execResult = spawnSync(
         'node',
@@ -448,10 +477,7 @@ describe('commit-msg CLI npm pack tests', () => {
       const commitMessage = 'feat: test codex bun co-developed-by';
       writeFileSync(messageFile, commitMessage, 'utf8');
 
-      const env = {
-        ...process.env,
-        CODEX_MANAGED_BY_BUN: '1',
-      };
+      const env = createToolEnv({ CODEX_MANAGED_BY_BUN: '1' });
 
       const execResult = spawnSync(
         'node',
@@ -476,10 +502,7 @@ describe('commit-msg CLI npm pack tests', () => {
       const commitMessage = 'feat: test opencode co-developed-by';
       writeFileSync(messageFile, commitMessage, 'utf8');
 
-      const env = {
-        ...process.env,
-        OPENCODE: '1',
-      };
+      const env = createToolEnv({ OPENCODE: '1' });
 
       const execResult = spawnSync(
         'node',
@@ -504,11 +527,7 @@ describe('commit-msg CLI npm pack tests', () => {
       const commitMessage = 'feat: test priority';
       writeFileSync(messageFile, commitMessage, 'utf8');
 
-      const env = {
-        ...process.env,
-        IFLOW_CLI: '1', // CLI type
-        VSCODE_BRAND: 'Qoder', // IDE type
-      };
+      const env = createToolEnv({ IFLOW_CLI: '1', VSCODE_BRAND: 'Qoder' });
 
       const execResult = spawnSync(
         'node',
@@ -630,10 +649,7 @@ describe('commit-msg CLI npm pack tests', () => {
       writeFileSync(messageFile, commitMessage, 'utf8');
 
       // Set environment variable
-      const env = {
-        ...process.env,
-        CLAUDECODE: '1',
-      };
+      const env = createToolEnv({ CLAUDECODE: '1' });
 
       // Execute hook using installed package
       const execResult = spawnSync(
