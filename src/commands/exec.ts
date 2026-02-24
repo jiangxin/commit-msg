@@ -753,7 +753,36 @@ function extractUserInfoFromTrailer(line: string): string | null {
 }
 
 /**
- * Filter out duplicate trailers that have the same user info as the CoDevelopedBy trailer
+ * Extract username from a trailer line, ignoring the email part
+ * (e.g., "Co-authored-by: Cursor <noreply@cursor.com>" -> "Cursor")
+ * @param line The trailer line
+ * @returns The username part or null if not a valid trailer or username is empty
+ */
+function extractUsernameFromTrailer(line: string): string | null {
+  const userInfo = extractUserInfoFromTrailer(line);
+  if (!userInfo || !userInfo.trim()) {
+    return null;
+  }
+
+  // Match "Name <email>" format - extract name part
+  const match = userInfo.match(/^(.+?)\s*<[^>]+>$/);
+  if (match) {
+    const name = match[1].trim();
+    return name.length > 0 ? name : null;
+  }
+
+  // No "Name <email>" format - could be "Name" only or "<email>" only
+  const trimmed = userInfo.trim();
+  // If it looks like email-only (starts with <), return null (no valid username)
+  if (trimmed.startsWith('<')) {
+    return null;
+  }
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+/**
+ * Filter out duplicate trailers that have the same username as the CoDevelopedBy trailer
+ * (compares username only, ignores email). Both usernames must be non-empty.
  * @param lines The existing trailer lines
  * @param coDevelopedBy The CoDevelopedBy trailer value
  * @returns Filtered trailer lines without duplicates
@@ -762,11 +791,11 @@ function filterDuplicateTrailers(
   lines: string[],
   coDevelopedBy: string
 ): string[] {
-  // Extract user info from CoDevelopedBy
-  const coDevelopedByUserInfo = extractUserInfoFromTrailer(
+  // Extract username from CoDevelopedBy (must be non-empty)
+  const coDevelopedByUsername = extractUsernameFromTrailer(
     `Co-developed-by: ${coDevelopedBy}`
   );
-  if (!coDevelopedByUserInfo) {
+  if (!coDevelopedByUsername) {
     return lines;
   }
 
@@ -785,14 +814,14 @@ function filterDuplicateTrailers(
       return true; // Keep non-duplicate trailer types
     }
 
-    // Extract user info from this line
-    const userInfo = extractUserInfoFromTrailer(line);
-    if (!userInfo) {
-      return true; // Keep lines we can't parse
+    // Extract username from this line (must be non-empty)
+    const username = extractUsernameFromTrailer(line);
+    if (!username) {
+      return true; // Keep lines we can't parse or have empty username
     }
 
-    // Keep the line if the user info is different from CoDevelopedBy
-    return userInfo !== coDevelopedByUserInfo;
+    // Keep the line if the username is different from CoDevelopedBy
+    return username !== coDevelopedByUsername;
   });
 }
 
@@ -947,6 +976,7 @@ export {
   needsCoDevelopedBy,
   clearCoDevelopedByEnvVars,
   extractUserInfoFromTrailer,
+  extractUsernameFromTrailer,
   filterDuplicateTrailers,
   checkAndUpgradeHook,
 };

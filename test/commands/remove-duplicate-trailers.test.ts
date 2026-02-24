@@ -1,11 +1,51 @@
 import { describe, it, expect } from 'vitest';
 import {
   extractUserInfoFromTrailer,
+  extractUsernameFromTrailer,
   filterDuplicateTrailers,
   insertTrailers,
 } from '../../src/commands/exec';
 
 describe('remove duplicate trailers functionality', () => {
+  describe('extractUsernameFromTrailer', () => {
+    it('should extract username from trailer, ignoring email', () => {
+      const line = 'Co-developed-by: Cursor <noreply@cursor.com>';
+      const result = extractUsernameFromTrailer(line);
+      expect(result).toBe('Cursor');
+    });
+
+    it('should extract same username from different Cursor emails', () => {
+      expect(
+        extractUsernameFromTrailer(
+          'Co-authored-by: Cursor <noreply@cursor.com>'
+        )
+      ).toBe('Cursor');
+      expect(
+        extractUsernameFromTrailer(
+          'Co-authored-by: Cursor <cursoragent@cursor.com>'
+        )
+      ).toBe('Cursor');
+    });
+
+    it('should extract username with spaces', () => {
+      const line = 'Co-authored-by: John Doe <john@example.com>';
+      const result = extractUsernameFromTrailer(line);
+      expect(result).toBe('John Doe');
+    });
+
+    it('should return null for empty username', () => {
+      const line = 'Co-authored-by:  <empty@example.com>';
+      const result = extractUsernameFromTrailer(line);
+      expect(result).toBeNull();
+    });
+
+    it('should return null for invalid trailer format', () => {
+      const line = 'Invalid line without colon';
+      const result = extractUsernameFromTrailer(line);
+      expect(result).toBeNull();
+    });
+  });
+
   describe('extractUserInfoFromTrailer', () => {
     it('should extract user info from a Co-developed-by trailer', () => {
       const line = 'Co-developed-by: John Doe <john@example.com>';
@@ -119,6 +159,29 @@ describe('remove duplicate trailers functionality', () => {
       // The invalid trailer line should be kept (not filtered out)
       expect(result).toEqual(lines);
     });
+
+    it('should filter Cursor trailers by username when emails differ (noreply vs cursoragent)', () => {
+      const lines = [
+        'Co-authored-by: Cursor <noreply@cursor.com>',
+        'Co-authored-by: Cursor <cursoragent@cursor.com>',
+        'Signed-off-by: Cursor <noreply@cursor.com>',
+        'Co-authored-by: John Doe <john@example.com>',
+      ];
+      const coDevelopedBy = 'Cursor <noreply@cursor.com>';
+      const result = filterDuplicateTrailers(lines, coDevelopedBy);
+      // All Cursor trailers should be filtered (same username), John Doe kept
+      expect(result).toEqual(['Co-authored-by: John Doe <john@example.com>']);
+    });
+
+    it('should filter Cursor trailers when Co-developed-by uses cursoragent email', () => {
+      const lines = [
+        'Co-authored-by: Cursor <noreply@cursor.com>',
+        'Signed-off-by: Cursor <cursoragent@cursor.com>',
+      ];
+      const coDevelopedBy = 'Cursor <cursoragent@cursor.com>';
+      const result = filterDuplicateTrailers(lines, coDevelopedBy);
+      expect(result).toEqual([]);
+    });
   });
 
   describe('insertTrailers with duplicate filtering', () => {
@@ -159,6 +222,41 @@ describe('remove duplicate trailers functionality', () => {
           line.includes('John Doe <john@example.com>')
       ).length;
       expect(johnCoAuthoredCount).toBe(1);
+    });
+
+    it('should filter Cursor co-authored-by/signed-off-by by username when embedding Co-developed-by', () => {
+      const message =
+        'feat: add feature\n\nCo-authored-by: Cursor <noreply@cursor.com>\nSigned-off-by: Cursor <cursoragent@cursor.com>\nCo-authored-by: Human <human@example.com>';
+      const coDevelopedBy = 'Cursor <noreply@cursor.com>';
+      const result = insertTrailers(message, { CoDevelopedBy: coDevelopedBy });
+      const lines = result.split('\n');
+
+      // Cursor trailers should be removed (replaced by Co-developed-by)
+      const cursorCoAuthoredCount = lines.filter(
+        (line) =>
+          line.startsWith('Co-authored-by:') && line.includes('Cursor <')
+      ).length;
+      const cursorSignedOffCount = lines.filter(
+        (line) => line.startsWith('Signed-off-by:') && line.includes('Cursor <')
+      ).length;
+      expect(cursorCoAuthoredCount).toBe(0);
+      expect(cursorSignedOffCount).toBe(0);
+
+      // Co-developed-by should exist
+      const coDevelopedCount = lines.filter(
+        (line) =>
+          line.startsWith('Co-developed-by:') &&
+          line.includes('Cursor <noreply@cursor.com>')
+      ).length;
+      expect(coDevelopedCount).toBe(1);
+
+      // Human Co-authored-by should be kept
+      const humanCoAuthoredCount = lines.filter(
+        (line) =>
+          line.startsWith('Co-authored-by:') &&
+          line.includes('Human <human@example.com>')
+      ).length;
+      expect(humanCoAuthoredCount).toBe(1);
     });
   });
 });
