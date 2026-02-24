@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { execSync } from 'child_process';
+import { readFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 
 // Check Node.js version to determine which dev script to use
 // Node.js 22+ and 20: Use tsx (dev and dev:node20 respectively)
@@ -161,5 +164,31 @@ describe('commit-msg CLI version tests', () => {
         );
       }
     }
+  });
+
+  // Test that package.json and package-lock.json versions are in sync
+  it('should have consistent version in package.json and package-lock.json', () => {
+    const __dirname = dirname(fileURLToPath(import.meta.url));
+    const rootDir = join(__dirname, '..');
+    const packageJsonPath = join(rootDir, 'package.json');
+    const packageLockJsonPath = join(rootDir, 'package-lock.json');
+
+    // Read and parse package.json
+    const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
+    const packageJsonVersion = packageJson.version;
+
+    // Read and parse package-lock.json
+    const packageLockJson = JSON.parse(
+      readFileSync(packageLockJsonPath, 'utf-8')
+    );
+    const packageLockJsonVersion = packageLockJson.version;
+
+    expect(packageJsonVersion).toBe(packageLockJsonVersion);
+
+    // Also check the version in packages field (root package entry)
+    const rootPackage = packageLockJson.packages[''];
+    expect(rootPackage).toBeDefined();
+    expect(rootPackage.version).toBe(packageJsonVersion);
+    expect(rootPackage.name).toBe(packageJson.name);
   });
 });
